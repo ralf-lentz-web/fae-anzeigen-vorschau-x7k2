@@ -50,6 +50,10 @@ button{font:inherit;cursor:pointer}
 .kopf .punkte{margin-left:auto;font-weight:700;letter-spacing:1px}
 .medien{position:relative;width:100%;aspect-ratio:4/5;background:#000}
 .medien video{width:100%;height:100%;display:block;object-fit:cover}
+.abspielen{position:absolute;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:0;background:rgba(0,0,0,.55);
+  color:#fff;font-size:34px;padding-left:8px;z-index:7;display:none}
+#reels .abspielen{top:calc(47px + 346px)}
+.steht .abspielen,.abspielen.zeigen{display:block}
 .ton{position:absolute;right:10px;bottom:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;display:grid;place-items:center;padding:0}
 .ton svg{width:15px;height:15px}
 .cta-balken{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-bottom:1px solid #efefef;width:100%;background:#fff;border-left:0;border-right:0;border-top:0;text-align:left}
@@ -144,7 +148,8 @@ button{font:inherit;cursor:pointer}
       <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></div>
     <div class="kopf"><div class="ava"><img src="videos/fae-wort.png" alt=""></div>
       <div><div class="name">FAE Elektrotechnik</div><div class="gesp">Gesponsert</div></div><span class="punkte">···</span></div>
-    <div class="medien"><video id="vfeed" loop playsinline></video>
+    <div class="medien"><video id="vfeed" loop playsinline preload="auto"></video>
+      <button class="abspielen" data-video="vfeed" aria-label="Video abspielen">▶</button>
       <button class="ton" data-video="vfeed" aria-label="Ton an oder aus"></button></div>
     <button class="cta-balken" data-formular><span id="feedueber"></span><em>Jetzt buchen ›</em></button>
     <div class="aktionen">
@@ -159,7 +164,8 @@ button{font:inherit;cursor:pointer}
 
   <!-- Reels -->
   <div class="ansicht" id="reels">
-    <video id="vreel" loop playsinline></video>
+    <video id="vreel" loop playsinline preload="auto"></video>
+    <button class="abspielen" data-video="vreel" aria-label="Video abspielen">▶</button>
     <div class="reel-oben"><span>Reels</span><span>⌕</span></div>
     <button class="ton reel-ton" data-video="vreel" aria-label="Ton an oder aus"></button>
     <div class="reel-seite">
@@ -284,6 +290,7 @@ function tonKnopf(){ $$('.ton').forEach(b => { b.innerHTML = $('#' + b.dataset.v
 function waehle(r){
   reel = r; textOffen = false;
   $$('#reelwahl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === r.id));
+  $('#vfeed').poster = `poster/${r.id}-feed.jpg`; $('#vreel').poster = `poster/${r.id}-reel.jpg`;
   $('#vfeed').src = r.feed; $('#vreel').src = r.reel;
   $('#feedueber').textContent = r.ueber; $('#reelzeile').textContent = r.zeile; zeigeText();
   spiele();
@@ -292,6 +299,7 @@ function spiele(){
   const an = platz === 'feed' ? $('#vfeed') : $('#vreel'), aus = platz === 'feed' ? $('#vreel') : $('#vfeed');
   aus.pause(); an.muted = !tonErlaubt;
   an.play().catch(() => { an.muted = true; an.play().catch(() => {}); }).finally(tonKnopf);
+  const k = document.querySelector(`.abspielen[data-video="${an.id}"]`); if (k) k.classList.toggle('zeigen', an.paused);
   tonKnopf();
 }
 /* Mit Ton starten. Browser lassen Ton erst nach dem ersten Klick auf die Seite zu, deshalb schaltet der erste Klick ihn ein. */
@@ -310,8 +318,17 @@ function setzePlatz(p){
 }
 REELS.forEach(r => { const b = document.createElement('button'); b.textContent = r.name; b.dataset.id = r.id; b.onclick = () => waehle(r); $('#reelwahl').append(b); });
 $$('#platzwahl button').forEach(b => b.onclick = () => setzePlatz(b.dataset.platz));
-$$('.ton').forEach(b => b.onclick = () => { const v = $('#' + b.dataset.video); v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); });
-$$('.medien video, #vreel').forEach(v => v.onclick = () => { v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); });
+/* Tippen: steht das Video (iPhone, Stromsparmodus), startet es mit Ton; läuft es, schaltet Tippen den Ton um. */
+function mitTon(v){ v.muted = false; tonErlaubt = true; v.play().catch(() => { v.muted = true; v.play().catch(() => {}); }).finally(tonKnopf); }
+$$('.ton').forEach(b => b.onclick = e => { e.stopPropagation(); const v = $('#' + b.dataset.video);
+  if (v.paused) return mitTon(v); v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); });
+$$('.abspielen').forEach(b => b.onclick = e => { e.stopPropagation(); mitTon($('#' + b.dataset.video)); });
+$$('#vfeed, #vreel').forEach(v => {
+  v.onclick = () => { if (v.paused) return mitTon(v); v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); };
+  const knopf = v.parentElement.querySelector(`.abspielen[data-video="${v.id}"]`);
+  const zeige = () => knopf.classList.toggle('zeigen', v.paused && !$('#blatt').classList.contains('offen'));
+  ['play', 'playing', 'pause', 'emptied'].forEach(n => v.addEventListener(n, zeige)); zeige();
+});
 
 /* Formular */
 let seite = 0;
