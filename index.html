@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anzeigen-Vorschau FAE electric city</title>
+<!--
+  Klickbare Vorschau der vier Instagram-Anzeigen (Feed und Reels) mit dem Bewerbungsformular. Nur zur Ansicht, nichts wird verschickt.
+  Öffnen über den Vorschau-Server: node .claude/serve-recruiting-gta.js → http://localhost:8250/anzeigen/vorschau/
+  Videos: Feed = anzeigen/feed/*-feed-4zu5.mp4, Reels = die abgenommenen Originale. Texte = anzeigen/STRATEGIE.md (abgenommen 25.11.2026).
+  Die Oberfläche ist nachempfunden, nicht die echte Instagram-App. Echt sieht es der Werbeanzeigenmanager in seiner Vorschau.
+-->
+<style>
+:root{--blau:#0095f6;--grau:#737373;--linie:#dbdbdb;--koralle:#e8506e;--gruen:#7acb52}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:#e6e7ea;font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;color:#000;
+  display:flex;gap:40px;justify-content:center;align-items:flex-start;padding:28px 16px}
+button{font:inherit;cursor:pointer}
+/* Steuerung */
+.steuer{width:330px;flex:none}
+.steuer h1{font-size:22px;line-height:1.2;margin:4px 0 6px}
+.steuer p{margin:0 0 18px;color:#444;font-size:14px}
+.gruppe{margin-bottom:20px}
+.gruppe b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#666;margin-bottom:8px}
+.knoepfe{display:flex;flex-wrap:wrap;gap:8px}
+.knoepfe button{border:1px solid #c9c5bd;background:#fff;border-radius:999px;padding:8px 14px;font-size:14px}
+.knoepfe button[aria-pressed=true]{background:#15101f;color:#fff;border-color:#15101f}
+.hinweis{font-size:13px;color:#555;background:#fff;border-radius:10px;padding:12px 14px}
+.hinweis li{margin:4px 0}
+/* Handy */
+.handy{flex:none;width:390px;height:844px;border-radius:56px;background:#111;padding:12px;box-shadow:0 30px 60px rgba(0,0,0,.25);position:relative}
+.schirm{position:relative;width:100%;height:100%;border-radius:44px;overflow:hidden;background:#fff}
+.status{position:absolute;top:0;left:0;right:0;height:47px;display:flex;justify-content:space-between;align-items:center;padding:4px 30px 0 34px;
+  font-weight:600;font-size:15px;z-index:20;pointer-events:none}
+.insel{position:absolute;top:11px;left:50%;width:110px;height:32px;margin-left:-55px;border-radius:20px;background:#000;z-index:21}
+.dunkel .status{color:#fff}
+.ansicht{position:absolute;inset:0;display:none}
+.ansicht.an{display:block}
+/* Feed */
+#feed{overflow-y:auto;padding-top:47px;background:#fff}
+.leiste{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid #efefef}
+.leiste .wort{font-weight:700;font-size:20px;letter-spacing:-.02em}
+.leiste svg{width:24px;height:24px}
+.kopf{display:flex;align-items:center;gap:10px;padding:10px 12px}
+.ava{width:34px;height:34px;border-radius:50%;background:#fff;border:1px solid var(--linie);display:grid;place-items:center;overflow:hidden;flex:none}
+.ava img{width:28px;height:auto}
+.kopf .name{font-weight:600;font-size:14px;line-height:1.15}
+.kopf .gesp{font-size:12px;color:#000}
+.kopf .punkte{margin-left:auto;font-weight:700;letter-spacing:1px}
+.medien{position:relative;width:100%;aspect-ratio:4/5;background:#000}
+.medien video{width:100%;height:100%;display:block;object-fit:cover}
+.ton{position:absolute;right:10px;bottom:10px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.6);color:#fff;border:0;display:grid;place-items:center;padding:0}
+.ton svg{width:15px;height:15px}
+.cta-balken{display:flex;align-items:center;justify-content:space-between;padding:11px 12px;border-bottom:1px solid #efefef;width:100%;background:#fff;border-left:0;border-right:0;border-top:0;text-align:left}
+.cta-balken span{font-weight:600;font-size:14px}
+.cta-balken em{font-style:normal;color:var(--blau);font-weight:600;font-size:14px}
+.aktionen{display:flex;gap:16px;padding:10px 12px 4px}
+.aktionen svg{width:24px;height:24px}
+.aktionen .merken{margin-left:auto}
+.text{padding:2px 12px 10px;font-size:14px;white-space:pre-line}
+.text b{font-weight:600}
+.mehr{color:var(--grau);background:none;border:0;padding:0;font-size:14px}
+.naechster{margin:6px 0 30px}
+.naechster .kopf .ava{background:#eee;border:0}
+.platz{width:100%;aspect-ratio:1;background:linear-gradient(135deg,#f2f2f2,#e6e6e6)}
+/* Reels */
+#reels{background:#000}
+#reels video{position:absolute;left:0;top:47px;width:100%;aspect-ratio:9/16;object-fit:cover}
+.reel-oben{position:absolute;top:47px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 16px;color:#fff;font-weight:700;font-size:20px;z-index:5;
+  text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.reel-unten{position:absolute;left:0;right:64px;bottom:22px;padding:0 14px;color:#fff;z-index:5;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.reel-unten .kopf{padding:0 0 8px}
+.reel-unten .kopf .name,.reel-unten .kopf .gesp{color:#fff}
+.reel-unten .zeile{font-size:14px;margin-bottom:10px}
+.reel-cta{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;border-radius:8px;background:rgba(255,255,255,.22);backdrop-filter:blur(8px);
+  color:#fff;font-weight:600;padding:10px 12px;font-size:14px}
+.reel-seite{position:absolute;right:10px;bottom:120px;display:flex;flex-direction:column;gap:22px;align-items:center;color:#fff;z-index:5;font-size:12px}
+.reel-seite svg{width:28px;height:28px}
+.reel-ton{position:absolute;right:14px;top:100px;z-index:6}
+/* Formular */
+.blatt{position:absolute;inset:0;background:#fff;z-index:30;transform:translateY(100%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;padding-top:47px}
+.blatt.offen{transform:none}
+.blatt-kopf{display:flex;align-items:center;gap:10px;padding:8px 14px}
+.blatt-kopf button{border:0;background:none;font-size:26px;line-height:1;padding:0 4px;color:#000}
+.fort{flex:1;height:4px;border-radius:2px;background:#eee;overflow:hidden}
+.fort i{display:block;height:100%;background:var(--blau);width:100%;transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.seite{display:none;flex:1;overflow-y:auto;padding:12px 22px 22px;flex-direction:column}
+.seite.an{display:flex}
+.seite .logo{width:120px;margin:18px auto 14px;display:block}
+.seite h2{font-size:22px;line-height:1.25;margin:6px 0 10px;text-align:center}
+.seite h3{font-size:15px;margin:18px 0 8px}
+.seite p{margin:0 0 10px;color:#333}
+.mitte{text-align:center}
+.feld{border:1px solid var(--linie);border-radius:10px;padding:8px 12px;margin-bottom:10px}
+.feld small{display:block;color:var(--grau);font-size:12px}
+.feld input{border:0;outline:0;font:inherit;width:100%;padding:2px 0}
+.klein{font-size:12px;color:var(--grau);margin:-4px 0 6px}
+.wahl{display:flex;flex-direction:column;gap:8px}
+.wahl label{display:flex;align-items:center;gap:10px;border:1px solid var(--linie);border-radius:10px;padding:11px 12px}
+.wahl input{width:18px;height:18px;accent-color:var(--blau)}
+.wahl label:has(input:checked){border-color:var(--blau);background:#f0f8ff}
+.unten{margin-top:auto;padding-top:16px}
+.haupt{width:100%;border:0;border-radius:10px;background:var(--blau);color:#fff;font-weight:600;padding:13px}
+.haupt:disabled{background:#b2dffc;cursor:default}
+.grau{display:block;text-align:center;text-decoration:none;color:#000;background:#efefef;border-radius:10px;font-weight:600;padding:13px;margin-bottom:8px}
+.neben{width:100%;border:1px solid var(--linie);border-radius:10px;background:#fff;font-weight:600;padding:12px;margin-top:8px}
+.liste{border:1px solid var(--linie);border-radius:10px}
+.liste div{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border-bottom:1px solid #f0f0f0;font-size:14px}
+.liste div:last-child{border:0}
+.liste span{color:var(--grau)}
+.link{color:var(--blau);background:none;border:0;padding:0;font-weight:600;font-size:14px}
+.haken{width:64px;height:64px;border-radius:50%;background:var(--gruen);color:#fff;display:grid;place-items:center;margin:40px auto 12px;font-size:36px}
+.wahl-reel{display:flex;flex-direction:column;gap:6px}
+.wahl-reel button{text-align:left;border-radius:10px;padding:9px 12px}
+@media (max-width:820px){body{flex-direction:column;align-items:center}.steuer{width:min(390px,100%)}}
+@media (max-height:900px) and (min-width:821px){.handy{transform:scale(.88);transform-origin:top center;margin-bottom:-100px}}
+</style>
+</head>
+<body>
+
+<div class="steuer">
+  <h1>So sehen die Anzeigen aus</h1>
+  <p>Nachgebaute Vorschau zum Durchklicken. Tippe im Handy auf „Jetzt buchen“, dann öffnet sich das Formular. Es wird nichts verschickt.</p>
+  <div class="gruppe"><b>Reel</b><div class="knoepfe wahl-reel" id="reelwahl"></div></div>
+  <div class="gruppe"><b>Platz</b><div class="knoepfe" id="platzwahl">
+    <button data-platz="feed" aria-pressed="true">Feed (4:5)</button><button data-platz="reels" aria-pressed="false">Reels (9:16)</button>
+  </div></div>
+  <div class="hinweis"><ul style="margin:0;padding-left:18px">
+    <li>Videos laufen mit Ton. Falls der Browser beim ersten Öffnen stumm startet, schaltet der erste Klick irgendwo auf der Seite den Ton ein.</li>
+    <li>Im Feed läuft die 4:5-Fassung, bei Reels das Original.</li>
+    <li>Die Oberfläche ist nachempfunden. Wie Instagram es genau zeigt, sieht man in der Vorschau des Werbeanzeigenmanagers.</li>
+    <li>Telefonnummer und Name sind Beispiele.</li>
+  </ul></div>
+</div>
+
+<div class="handy"><div class="schirm" id="schirm">
+  <div class="insel"></div>
+  <div class="status"><span>9:41</span><span>●●● ▮</span></div>
+
+  <!-- Feed -->
+  <div class="ansicht an" id="feed">
+    <div class="leiste"><span class="wort">Startseite</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg></div>
+    <div class="kopf"><div class="ava"><img src="videos/fae-wort.png" alt=""></div>
+      <div><div class="name">FAE Elektrotechnik</div><div class="gesp">Gesponsert</div></div><span class="punkte">···</span></div>
+    <div class="medien"><video id="vfeed" loop playsinline></video>
+      <button class="ton" data-video="vfeed" aria-label="Ton an oder aus"></button></div>
+    <button class="cta-balken" data-formular><span id="feedueber"></span><em>Jetzt buchen ›</em></button>
+    <div class="aktionen">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M22 3 11 14M22 3l-7 19-4-8-8-4z"/></svg>
+      <svg class="merken" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2"><path d="M19 21l-7-5-7 5V4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1z"/></svg>
+    </div>
+    <div class="text" id="feedtext"></div>
+    <div class="naechster"><div class="kopf"><div class="ava"></div><div><div class="name" style="color:var(--grau)">nächster Beitrag</div></div></div><div class="platz"></div></div>
+  </div>
+
+  <!-- Reels -->
+  <div class="ansicht" id="reels">
+    <video id="vreel" loop playsinline></video>
+    <div class="reel-oben"><span>Reels</span><span>⌕</span></div>
+    <button class="ton reel-ton" data-video="vreel" aria-label="Ton an oder aus"></button>
+    <div class="reel-seite">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 21s-7-4.5-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 12a8.5 8.5 0 0 1-12.6 7.4L3 21l1.6-5.2A8.5 8.5 0 1 1 21 12z"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 3 11 14M22 3l-7 19-4-8-8-4z"/></svg>
+      <span style="font-size:20px;font-weight:700">···</span>
+    </div>
+    <div class="reel-unten">
+      <div class="kopf"><div class="ava"><img src="videos/fae-wort.png" alt=""></div>
+        <div><div class="name">FAE Elektrotechnik</div><div class="gesp">Gesponsert</div></div></div>
+      <div class="zeile" id="reelzeile"></div>
+      <button class="reel-cta" data-formular><span>Jetzt buchen</span><span>›</span></button>
+    </div>
+  </div>
+
+  <!-- Formular -->
+  <div class="blatt" id="blatt">
+    <div class="blatt-kopf"><button id="zurueck" aria-label="Zurück">‹</button><div class="fort"><i id="fort"></i></div><button id="zu" aria-label="Schließen">×</button></div>
+
+    <div class="seite" data-s="0">
+      <img class="logo" src="videos/fae-wort.png" alt="FAE">
+      <h2>Buch dir deinen Termin zum Bewerbungsgespräch.</h2>
+      <p class="mitte">Telefonisch, per Videocall oder vor Ort. Du wählst, wir rufen dich zu deiner Wunschzeit zurück.</p>
+      <p class="mitte" style="color:var(--grau);font-size:13px">Elektriker (m/w/d) · Dresden und Umgebung</p>
+      <div class="unten">
+        <a class="grau" href="https://www.fae-elektrotechnik.de/stellen-dresden/elektroinstallateure-dresden" target="_blank" rel="noopener">Zur Stellenbeschreibung</a>
+        <button class="haupt" data-weiter>Weiter</button>
+      </div>
+    </div>
+
+    <div class="seite" data-s="1">
+      <h3 style="margin-top:4px">Deine Kontaktdaten</h3>
+      <div class="feld"><small>Vorname</small><input id="vorname" value="Lukas"></div>
+      <div class="feld"><small>Telefonnummer</small><input id="telefon" value="+49 151 23456789" inputmode="tel"></div>
+      <div class="feld"><small>E-Mail (freiwillig)</small><input id="email" type="email" value="lukas.beispiel@mail.de" inputmode="email"></div>
+      <p class="klein">Aus deinem Konto übernommen. Du kannst es ändern.</p>
+      <h3>Wie möchtest du dein Gespräch führen?</h3>
+      <div class="wahl" data-frage="art">
+        <label><input type="radio" name="art" value="Telefonisch">Telefonisch</label>
+        <label><input type="radio" name="art" value="Per Videocall">Per Videocall</label>
+        <label><input type="radio" name="art" value="Vor Ort bei FAE">Vor Ort bei FAE</label>
+      </div>
+      <h3>Hast du eine Elektro-Ausbildung?</h3>
+      <div class="wahl" data-frage="ausbildung">
+        <label><input type="radio" name="ausbildung" value="Ja, abgeschlossen">Ja, abgeschlossen</label>
+        <label><input type="radio" name="ausbildung" value="Bin noch in der Ausbildung">Bin noch in der Ausbildung</label>
+        <label><input type="radio" name="ausbildung" value="Nein">Nein</label>
+      </div>
+      <h3>Wann sollen wir dich zurückrufen?</h3>
+      <div class="wahl" data-frage="rueckruf">
+        <label><input type="radio" name="rueckruf" value="So schnell wie möglich">So schnell wie möglich</label>
+        <label><input type="radio" name="rueckruf" value="Vormittags (7 bis 12 Uhr)">Vormittags (7 bis 12 Uhr)</label>
+        <label><input type="radio" name="rueckruf" value="Nachmittags (12 bis 16 Uhr)">Nachmittags (12 bis 16 Uhr)</label>
+        <label><input type="radio" name="rueckruf" value="Abends (16 bis 20 Uhr)">Abends (16 bis 20 Uhr)</label>
+      </div>
+      <div class="unten"><button class="haupt" data-weiter id="weiter1" disabled>Weiter</button></div>
+    </div>
+
+    <div class="seite" data-s="2">
+      <h2 style="text-align:left">Datenschutz</h2>
+      <p>FAE Elektrotechnik nutzt deine Angaben nur, um dich wegen deines Bewerbungsgesprächs zurückzurufen.</p>
+      <p><button class="link" type="button" id="dslink">Datenschutzerklärung von FAE</button></p>
+      <p class="klein" id="dshinweis" hidden>In der echten Anzeige öffnet sich hier die Datenschutzerklärung (Link fehlt noch).</p>
+      <div class="unten"><button class="haupt" data-weiter>Überprüfen</button></div>
+    </div>
+
+    <div class="seite" data-s="3">
+      <h2 style="text-align:left">Stimmt alles?</h2>
+      <div class="liste">
+        <div><span>Vorname</span><b id="pv"></b></div>
+        <div><span>Telefon</span><b id="pt"></b></div>
+        <div><span>E-Mail</span><b id="pe"></b></div>
+        <div><span>Gespräch</span><b id="pa"></b></div>
+        <div><span>Elektro-Ausbildung</span><b id="pb"></b></div>
+        <div><span>Rückruf</span><b id="pr"></b></div>
+      </div>
+      <p style="margin-top:10px"><button class="link" type="button" id="bearbeiten">Bearbeiten</button></p>
+      <div class="unten"><button class="haupt" data-weiter>Senden</button></div>
+    </div>
+
+    <div class="seite" data-s="4">
+      <div class="haken">✓</div>
+      <h2 id="dankeueber">Danke.</h2>
+      <p class="mitte">Wir rufen dich zu deiner Wunschzeit zurück und machen deinen Termin fest.</p>
+      <div class="unten">
+        <a class="haupt" style="display:block;text-align:center;text-decoration:none" href="https://www.fae-elektrotechnik.de/stellen-dresden/elektroinstallateure-dresden" target="_blank" rel="noopener">Zur Stellenbeschreibung</a>
+        <button class="neben" id="fertig">Fertig</button>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<script>
+const REELS = [
+  {id:'m4', name:'Mission 4 · Weihnachtsmission', feed:'videos/fae-electric-city-mission4-feed-4zu5.mp4', reel:'videos/fae-electric-city-mission4-hochformat.mp4',
+   zeile:'Ganz Dresden sieht, was du gemacht hast.', ueber:'Elektriker (m/w/d) bei FAE in Dresden',
+   text:'Bei FAE bist du der, der das Licht zurückbringt: in Dresden und der Region, von der Leuchte bis zur Brandmeldeanlage. Du arbeitest im Team mit 180+ Kolleginnen und Kollegen, Werkzeug und Arbeitskleidung stellen wir, und dein Vertrag ist unbefristet ab Tag eins.'},
+  {id:'m2', name:'Mission 2 · Die Map heißt Dresden', feed:'videos/fae-electric-city-mission2-feed-4zu5.mp4', reel:'videos/fae-electric-city-mission2-hochformat.mp4',
+   zeile:'Du bist Elektriker. Kein Fernfahrer.', ueber:'Nur Region Dresden, keine Montage',
+   text:'FAE arbeitet nur in der Region Dresden. Keine Montage, kein Hotel, abends bist du zu Hause. Deine Baustellen sind Industrie, Gewerbe und Laborbau, ganz in deiner Nähe. Start in Heidenau, 180+ Kolleginnen und Kollegen.'},
+  {id:'r1', name:'Reel 1 · Trafo abladen', feed:'videos/fae-electric-city-feed-4zu5.mp4', reel:'videos/fae-electric-city-hochformat.mp4',
+   zeile:'Ein Spiel, bei dem deine Mutter stolz ist.', ueber:'Echte Großprojekte in Dresden',
+   text:'Bei FAE arbeitest du an echten Großprojekten wie dem Kaufpark Nickern. Starkstrom, Schwachstrom, KNX und DALI: Hier lernst du die ganze Gebäudetechnik, und wir fördern deine Entwicklung. Werkzeug und Arbeitskleidung stellen wir.'},
+  {id:'m3', name:'Mission 3 · Große Bühne', feed:'videos/fae-electric-city-mission3-feed-4zu5.mp4', reel:'videos/fae-electric-city-mission3-hochformat.mp4',
+   zeile:'Große Bühne? Bei uns kein Problem.', ueber:'Unbefristet ab Tag eins',
+   text:'Bei FAE kommst du hoch hinaus: Dein Vertrag ist unbefristet ab Tag eins, und wir fördern deine Entwicklung. Leuchten, Sensorik, Datennetze: moderne Gebäudetechnik in der Region Dresden, im Team mit 180+ Kolleginnen und Kollegen.'}
+];
+const SCHLUSS = 'Werde Elektriker (m/w/d) bei FAE. Buch dir deinen Termin zum Bewerbungsgespräch: telefonisch, per Videocall oder vor Ort.';
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const LAUT = '<svg viewBox="0 0 24 24" fill="#fff"><path d="M3 9v6h4l5 4V5L7 9H3zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg>';
+const STUMM = '<svg viewBox="0 0 24 24" fill="#fff"><path d="M3 9v6h4l5 4V5L7 9H3zm18.3 0-1.4-1.4L17.5 10l-2.4-2.4L13.7 9l2.4 2.4-2.4 2.4 1.4 1.4 2.4-2.4 2.4 2.4 1.4-1.4-2.4-2.4z"/></svg>';
+let reel = REELS[0], platz = 'feed', textOffen = false;
+
+function zeigeText(){
+  const voll = reel.zeile + '\n' + reel.text + ' ' + SCHLUSS;
+  const kurz = voll.length > 125 ? voll.slice(0, voll.lastIndexOf(' ', 110)) : voll;
+  $('#feedtext').innerHTML = '<b>FAE Elektrotechnik</b> ' + (textOffen ? voll : kurz + '… <button class="mehr" id="mehr">mehr</button>');
+  const m = $('#mehr'); if (m) m.onclick = () => { textOffen = true; zeigeText(); };
+}
+function tonKnopf(){ $$('.ton').forEach(b => { b.innerHTML = $('#' + b.dataset.video).muted ? STUMM : LAUT; }); }
+function waehle(r){
+  reel = r; textOffen = false;
+  $$('#reelwahl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.id === r.id));
+  $('#vfeed').src = r.feed; $('#vreel').src = r.reel;
+  $('#feedueber').textContent = r.ueber; $('#reelzeile').textContent = r.zeile; zeigeText();
+  spiele();
+}
+function spiele(){
+  const an = platz === 'feed' ? $('#vfeed') : $('#vreel'), aus = platz === 'feed' ? $('#vreel') : $('#vfeed');
+  aus.pause(); an.muted = !tonErlaubt;
+  an.play().catch(() => { an.muted = true; an.play().catch(() => {}); }).finally(tonKnopf);
+  tonKnopf();
+}
+/* Mit Ton starten. Browser lassen Ton erst nach dem ersten Klick auf die Seite zu, deshalb schaltet der erste Klick ihn ein. */
+let tonErlaubt = true;
+document.addEventListener('pointerdown', function ersterKlick(e){
+  document.removeEventListener('pointerdown', ersterKlick, true);
+  if (e.target.closest('.ton, video')) return;
+  const v = platz === 'feed' ? $('#vfeed') : $('#vreel');
+  if (v.muted) { v.muted = false; tonKnopf(); }
+}, true);
+function setzePlatz(p){
+  platz = p;
+  $$('#platzwahl button').forEach(b => b.setAttribute('aria-pressed', b.dataset.platz === p));
+  $('#feed').classList.toggle('an', p === 'feed'); $('#reels').classList.toggle('an', p === 'reels');
+  $('#schirm').classList.toggle('dunkel', p === 'reels'); spiele();
+}
+REELS.forEach(r => { const b = document.createElement('button'); b.textContent = r.name; b.dataset.id = r.id; b.onclick = () => waehle(r); $('#reelwahl').append(b); });
+$$('#platzwahl button').forEach(b => b.onclick = () => setzePlatz(b.dataset.platz));
+$$('.ton').forEach(b => b.onclick = () => { const v = $('#' + b.dataset.video); v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); });
+$$('.medien video, #vreel').forEach(v => v.onclick = () => { v.muted = !v.muted; tonErlaubt = !v.muted; tonKnopf(); });
+
+/* Formular */
+let seite = 0;
+function zeigeSeite(n){
+  seite = n;
+  $$('.seite').forEach(s => s.classList.toggle('an', +s.dataset.s === n));
+  $('#fort').style.transform = 'scaleX(' + (n / 4) + ')';
+  $('#zurueck').style.visibility = n > 0 && n < 4 ? 'visible' : 'hidden';
+  if (n === 3) {
+    $('#pv').textContent = $('#vorname').value; $('#pt').textContent = $('#telefon').value; $('#pe').textContent = $('#email').value.trim() || 'keine';
+    $('#pa').textContent = (document.querySelector('[name=art]:checked') || {}).value || '';
+    $('#pb').textContent = (document.querySelector('[name=ausbildung]:checked') || {}).value || '';
+    $('#pr').textContent = (document.querySelector('[name=rueckruf]:checked') || {}).value || '';
+  }
+  if (n === 4) $('#dankeueber').textContent = 'Danke, ' + ($('#vorname').value.trim() || 'du') + '.';
+}
+function pruefe(){
+  $('#weiter1').disabled = !(['art', 'ausbildung', 'rueckruf'].every(n => document.querySelector(`[name=${n}]:checked`))
+    && $('#vorname').value.trim() && $('#telefon').value.trim());
+}
+function oeffne(){ $$('input[type=radio]').forEach(i => i.checked = false); $('#dshinweis').hidden = true; pruefe(); zeigeSeite(0); $('#blatt').classList.add('offen'); $$('video').forEach(v => v.pause()); }
+function schliesse(){ $('#blatt').classList.remove('offen'); spiele(); }
+$$('[data-formular]').forEach(b => b.onclick = oeffne);
+$$('[data-weiter]').forEach(b => b.onclick = () => zeigeSeite(seite + 1));
+$$('input').forEach(i => { i.addEventListener('input', pruefe); i.addEventListener('change', pruefe); });
+$('#zurueck').onclick = () => zeigeSeite(Math.max(0, seite - 1));
+$('#zu').onclick = schliesse; $('#fertig').onclick = schliesse;
+$('#bearbeiten').onclick = () => zeigeSeite(1);
+$('#dslink').onclick = () => { $('#dshinweis').hidden = false; };
+
+waehle(REELS[0]);
+</script>
+</body>
+</html>
